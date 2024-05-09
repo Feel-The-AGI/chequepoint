@@ -44,7 +44,7 @@ def main():
         extracted_text = extract_text(Image.fromarray(image))
         print("Extracted Text:", extracted_text)
 
-        api_url = "http://example.com/api/upload"  # Placeholder API URL
+        api_url = "http://jason.com/api/upload"  # Placeholder API URL
         data = {"extracted_data": extracted_text}
         response = upload_data(api_url, data)
         print("Upload Successful:", response.text)
