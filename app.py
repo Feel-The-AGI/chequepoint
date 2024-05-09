@@ -4,6 +4,7 @@ import pytesseract
 from PIL import Image
 import requests
 import json
+import numpy as np
 
 # Functions for image capture and loading
 def capture_image_from_camera():
@@ -20,9 +21,22 @@ def load_image_from_file(file_path):
         raise FileNotFoundError("Failed to load image from file.")
     return image
 
-# Function for extracting text using OCR
-def extract_text(image):
-    return pytesseract.image_to_string(image)
+# Function to preprocess image for better OCR accuracy
+def preprocess_image(image):
+    gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+    blur = cv2.GaussianBlur(gray, (5, 5), 0)
+    thresh = cv2.threshold(blur, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)[1]
+    return thresh
+
+# Function for dynamically detecting and extracting text fields
+def extract_features(image):
+    preprocessed_image = preprocess_image(image)
+    data = {}
+    # Customize field detection and OCR settings based on expected cheque layout
+    data['Account Number'] = pytesseract.image_to_string(preprocessed_image, config='--psm 7', lang='eng')
+    data['Amount'] = pytesseract.image_to_string(preprocessed_image, config='--psm 7', lang='eng')
+    data['Date'] = pytesseract.image_to_string(preprocessed_image, config='--psm 7', lang='eng')
+    return data
 
 # Function to upload data to the bank's API
 def upload_data(api_url, data):
@@ -40,13 +54,12 @@ def main():
             image = load_image_from_file(file_path)
         else:
             image = capture_image_from_camera()
-        
-        extracted_text = extract_text(Image.fromarray(image))
-        print("Extracted Text:", extracted_text)
 
-        api_url = "http://jason.com/api/upload"  # Placeholder API URL
-        data = {"extracted_data": extracted_text}
-        response = upload_data(api_url, data)
+        extracted_data = extract_features(image)
+        print("Extracted Data:", json.dumps(extracted_data, indent=2))
+
+        api_url = "http://example.com/api/upload"  # Placeholder API URL
+        response = upload_data(api_url, extracted_data)
         print("Upload Successful:", response.text)
 
     except Exception as e:
